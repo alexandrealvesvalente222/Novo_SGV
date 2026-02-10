@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Veículos (SGV)</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/assets/css/styles.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🚓 SGV - Sistema de Gestão de Veículos</h1>
+                </div>
+                <nav class="main-nav">
+                    <button class="nav-tab active" data-tab="sigweb">
+                        <span class="tab-icon">🗺️</span>
+                        SIGWEB
+                    </button>
+                    <button class="nav-tab" data-tab="dashboard">
+                        <span class="tab-icon">📊</span>
+                        Dashboard
+                    </button>
+                    <button class="nav-tab" data-tab="admin">
+                        <span class="tab-icon">⚙️</span>
+                        Administrador
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Carregando...</p>
+        </div>
+
+        <!-- Main Content -->
+        <main class="app-main">
+
+            <!-- ABA SIGWEB -->
+            <section id="tab-sigweb" class="tab-content active">
+                <div class="sigweb-container">
+                    <!-- Painel de Filtros -->
+                    <aside class="filters-panel">
+                        <div class="filters-header">
+                            <h3>Filtros</h3>
+                            <button id="clear-filters" class="btn btn-secondary btn-sm">Limpar</button>
+                        </div>
+
+                        <div class="filters-content">
+                            <!-- Estrutura Organizacional -->
+                            <div class="filter-group">
+                                <h4>Estrutura Organizacional</h4>
+
+                                <div class="form-group">
+                                    <label for="filter-comando">Comando:</label>
+                                    <select id="filter-comando" class="form-control">
+                                        <option value="">Todos os comandos</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="filter-unidade">Unidade:</label>
+                                    <select id="filter-unidade" class="form-control">
+                                        <option value="">Todas as unidades</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="filter-batalhao">Batalhão:</label>
+                                    <select id="filter-batalhao" class="form-control">
+                                        <option value="">Todos os batalhões</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="filter-viatura">Viatura:</label>
+                                    <input type="text" id="filter-viatura" class="form-control"
+                                        placeholder="Buscar por prefixo ou placa">
+                                </div>
+                            </div>
+
+                            <!-- Geografia -->
+                            <div class="filter-group">
+                                <h4>Geografia</h4>
+
+                                <div class="form-group">
+                                    <label for="filter-municipio">Município:</label>
+                                    <select id="filter-municipio" class="form-control">
+                                        <option value="">Todos os municípios</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="filter-bairro">Bairro:</label>
+                                    <select id="filter-bairro" class="form-control">
+                                        <option value="">Todos os bairros</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Camadas do Mapa -->
+                            <div class="filter-group">
+                                <h4>Camadas</h4>
+
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="layer-batalhoes" checked>
+                                        <span class="checkmark"></span>
+                                        Limites dos Batalhões
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="layer-bases" checked>
+                                        <span class="checkmark"></span>
+                                        Bases/Batalhões
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="layer-viaturas" checked>
+                                        <span class="checkmark"></span>
+                                        Viaturas
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Legenda -->
+                            <div class="filter-group">
+                                <h4>Legenda - Cores das Viaturas</h4>
+                                <div class="legend">
+                                    <div class="legend-item">
+                                        <span class="legend-color critical"></span>
+                                        <span><strong>0-59:</strong> Crítico (Substituição Urgente)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color warning"></span>
+                                        <span><strong>60-79:</strong> Atenção (Monitorar)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color good"></span>
+                                        <span><strong>80-100:</strong> Adequado (Boa Condição)</span>
+                                    </div>
+                                </div>
+                                <div class="legend-note">
+                                    <small>💡 As cores das viaturas no mapa correspondem à Nota de Ocupação de cada
+                                        veículo.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filters-actions">
+                            <button id="apply-filters" class="btn btn-primary">Aplicar Filtros</button>
+                        </div>
+                    </aside>
+
+                    <!-- Mapa -->
+                    <div class="map-container">
+                        <div id="map" class="map"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content">
+                <div class="dashboard-container">
+
+                    <!-- KPIs Cards -->
+                    <div class="kpis-section">
+                        <div class="kpi-card">
+                            <div class="kpi-icon">🚗</div>
+                            <div class="kpi-content">
+                                <div class="kpi-value" id="kpi-frota-total">-</div>
+                                <div class="kpi-label">Frota Total</div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon">✅</div>
+                            <div class="kpi-content">
+                                <div class="kpi-value" id="kpi-pct-ativos">-</div>
+                                <div class="kpi-label">% Ativos</div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon">⚡</div>
+                            <div class="kpi-content">
+                                <div class="kpi-value" id="kpi-vida-util">-</div>
+                                <div class="kpi-label">Vida Útil Média</div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon">⏰</div>
+                            <div class="kpi-content">
+                                <div class="kpi-value" id="kpi-horas-mes">-</div>
+                                <div class="kpi-label">Horas/Mês</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos e Tabelas -->
+                    <div class="dashboard-content">
+                        <!-- Gráfico Vida Útil por Categoria -->
+                        <div class="dashboard-section">
+                            <div class="section-header">
+                                <h3>Vida Útil Média por Categoria</h3>
+                                <div class="chart-controls">
+                                    <button type="button" class="btn btn-secondary btn-sm" id="chart-type-toggle"
+                                        title="Alternar tipo de gráfico">
+                                        📊 Barras
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-vida-util"></canvas>
+                            </div>
+
+                            <!-- Tabela Detalhada Vida Útil por Categoria -->
+                            <div class="section-header">
+                                <h4>📊 Detalhes por Categoria</h4>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="table-vida-util-detalhada">
+                                    <thead>
+                                        <tr>
+                                            <th>Categoria</th>
+                                            <th>Vida Útil</th>
+                                            <th>Total</th>
+                                            <th>Ativos</th>
+                                            <th>Status</th>
+                                            <th>Km Média</th>
+                                            <th>Horas/Mês</th>
+                                            <th>Manutenções</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Tabela FIPE -->
+                            <div class="section-header">
+                                <h4>Valores FIPE por Categoria</h4>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="table-fipe">
+                                    <thead>
+                                        <tr>
+                                            <th>Categoria</th>
+                                            <th>Valor Médio</th>
+                                            <th>Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Top Rankings -->
+                        <div class="dashboard-section">
+                            <div class="rankings-grid">
+
+                                <!-- TOP 10 Mais Rodados -->
+                                <div class="ranking-card">
+                                    <div class="section-header">
+                                        <h4>🏁 TOP 10 Mais Rodados</h4>
+                                    </div>
+                                    <div class="table-container">
+                                        <table class="data-table" id="table-top-rodados">
+                                            <thead>
+                                                <tr>
+                                                    <th>Prefixo</th>
+                                                    <th>Categoria</th>
+                                                    <th>Km</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Mais Horas Trabalhadas -->
+                                <div class="ranking-card">
+                                    <div class="section-header">
+                                        <h4>⏱️ Mais Horas (Mês)</h4>
+                                    </div>
+                                    <div class="table-container">
+                                        <table class="data-table" id="table-top-horas">
+                                            <thead>
+                                                <tr>
+                                                    <th>Prefixo</th>
+                                                    <th>Categoria</th>
+                                                    <th>Horas</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Mais Manutenções -->
+                                <div class="ranking-card">
+                                    <div class="section-header">
+                                        <h4>🔧 Mais Manutenções (6m)</h4>
+                                    </div>
+                                    <div class="table-container">
+                                        <table class="data-table" id="table-top-manutencoes">
+                                            <thead>
+                                                <tr>
+                                                    <th>Prefixo</th>
+                                                    <th>Categoria</th>
+                                                    <th>Qtd</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recomendações de Descarte -->
+                        <div class="dashboard-section">
+                            <div class="section-header">
+                                <h3>🗑️ Recomendações de Descarte</h3>
+                            </div>
+                            <div class="recommendations-container" id="recommendations-container">
+                                <!-- Será preenchido via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA ADMINISTRADOR -->
+            <section id="tab-admin" class="tab-content">
+                <div class="admin-container">
+                    <div class="admin-header">
+                        <h2>Área do Administrador</h2>
+                        <p>Configurações e ferramentas administrativas do sistema</p>
+                    </div>
+
+                    <div class="admin-grid">
+                        <div class="admin-card disabled" data-tooltip="Em desenvolvimento">
+                            <div class="admin-card-icon">⚙️</div>
+                            <div class="admin-card-content">
+                                <h3>Parâmetros de Cálculo</h3>
+                                <p>Configurar parâmetros da Nota de Ocupação</p>
+                                <button class="btn btn-secondary" disabled>Configurar</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-card disabled" data-tooltip="Em desenvolvimento">
+                            <div class="admin-card-icon">👥</div>
+                            <div class="admin-card-content">
+                                <h3>Usuários & Perfis</h3>
+                                <p>Gerenciar usuários e permissões</p>
+                                <button class="btn btn-secondary" disabled>Gerenciar</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-card disabled" data-tooltip="Em desenvolvimento">
+                            <div class="admin-card-icon">📁</div>
+                            <div class="admin-card-content">
+                                <h3>Upload de GeoJSON</h3>
+                                <p>Importar dados geográficos</p>
+                                <button class="btn btn-secondary" disabled>Upload</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-card disabled" data-tooltip="Em desenvolvimento">
+                            <div class="admin-card-icon">📊</div>
+                            <div class="admin-card-content">
+                                <h3>Relatórios</h3>
+                                <p>Gerar relatórios personalizados</p>
+                                <button class="btn btn-secondary" disabled>Relatórios</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-card disabled" data-tooltip="Em desenvolvimento">
+                            <div class="admin-card-icon">🔄</div>
+                            <div class="admin-card-content">
+                                <h3>Backup & Restore</h3>
+                                <p>Backup e restauração de dados</p>
+                                <button class="btn btn-secondary" disabled>Backup</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-card disabled" data-tooltip="Em desenvolvimento">
+                            <div class="admin-card-icon">🔧</div>
+                            <div class="admin-card-content">
+                                <h3>Manutenção</h3>
+                                <p>Ferramentas de manutenção do sistema</p>
+                                <button class="btn btn-secondary" disabled>Manutenção</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal para detalhes da viatura -->
+    <div id="veiculo-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Detalhes da Viatura</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Conteúdo será preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js com fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script>
+        // Fallback para Chart.js se o CDN falhar
+        if (typeof Chart === 'undefined') {
+            console.warn('⚠️ CDN primário do Chart.js falhou, tentando CDN alternativo...');
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"><\/script>');
+        }
+    </script>
+
+    <!-- Scripts JavaScript -->
+    <script src="/static/assets/js/utils.js"></script>
+    <script src="/static/assets/js/api.js"></script>
+    <script src="/static/assets/js/map.js"></script>
+    <script src="/static/assets/js/dashboard.js"></script>
+
+    <script>
+        // Inicialização da aplicação
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('🚀 Inicializando SGV...');
+
+            // Configurar navegação entre abas
+            setupTabs();
+
+            // Configurar tooltips para admin
+            setupTooltips();
+
+            // Inicializar aba ativa
+            const activeTab = document.querySelector('.nav-tab.active').dataset.tab;
+            if (activeTab === 'sigweb') {
+                initSigweb();
+            }
+
+            console.log('✅ SGV inicializado com sucesso!');
+        });
+
+        function setupTabs() {
+            const tabButtons = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.dataset.tab;
+
+                    // Remover classe active de todos
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    // Adicionar classe active ao selecionado
+                    button.classList.add('active');
+                    document.getElementById(`tab-${targetTab}`).classList.add('active');
+
+                    // Inicializar aba específica
+                    if (targetTab === 'sigweb') {
+                        initSigweb();
+                    } else if (targetTab === 'dashboard') {
+                        // Debounce para evitar cliques múltiplos
+                        clearTimeout(window.dashboardInitTimeout);
+                        window.dashboardInitTimeout = setTimeout(() => {
+                            initDashboard();
+                        }, 100);
+                    }
+                });
+            });
+        }
+
+        function setupTooltips() {
+            const tooltipElements = document.querySelectorAll('[data-tooltip]');
+
+            tooltipElements.forEach(element => {
+                element.addEventListener('mouseenter', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = e.target.dataset.tooltip;
+                    document.body.appendChild(tooltip);
+
+                    const rect = e.target.getBoundingClientRect();
+                    tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
+                    tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
+                });
+
+                element.addEventListener('mouseleave', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
